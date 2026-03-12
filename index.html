@@ -1,12 +1,567 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=+, initial-scale=1.0">
-    <title>Document</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Виселица - Игра на русском</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .hangman-display {
+            font-family: 'Courier New', monospace;
+            white-space: pre;
+            background: #333;
+            color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+        
+        .word-display {
+            text-align: center;
+            font-size: 3em;
+            letter-spacing: 10px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .guessed-letters {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #e0f7fa;
+            border-radius: 10px;
+            font-size: 1.2em;
+        }
+        
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .key {
+            background: #e0e0e0;
+            border: none;
+            padding: 15px 5px;
+            font-size: 1.2em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .key:hover:not(:disabled) {
+            background: #bbdefb;
+            transform: scale(1.05);
+        }
+        
+        .key.used {
+            background: #ffcdd2;
+            color: #666;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .key.correct {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+        
+        .key.wrong {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+        
+        .message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .win-message {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+        
+        .lose-message {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+        
+        .hint {
+            text-align: center;
+            margin-bottom: 20px;
+            font-style: italic;
+            color: #7b1fa2;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 12px 30px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        
+        .new-game {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .new-game:hover {
+            background: #45a049;
+        }
+        
+        .hint-btn {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .hint-btn:hover {
+            background: #f57c00;
+        }
+        
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #666;
+        }
+    </style>
 </head>
 <body>
-    <h1>привет</h1>
-</body>
+    <div class="game-container">
+        <h1>🎮 ВИСЕЛИЦА</h1>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-label">Попыток осталось</div>
+                <div class="stat-value" id="attempts">6</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Сыграно игр</div>
+                <div class="stat-value" id="games-played">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Побед</div>
+                <div class="stat-value" id="wins">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">% побед</div>
+                <div class="stat-value" id="win-percent">0%</div>
+            </div>
+        </div>
+        
+        <div class="hangman-display" id="hangman">
+           -----
+           |   |
+               |
+               |
+               |
+               |
+        =========
+        </div>
+        
+        <div class="word-display" id="word">_____</div>
+        
+        <div class="guessed-letters" id="guessed-letters">
+            Использованные буквы: пока нет
+        </div>
+        
+        <div class="hint" id="hint"></div>
+        
+        <div class="keyboard" id="keyboard"></div>
+        
+        <div class="message" id="message"></div>
+        
+        <div class="buttons">
+            <button class="new-game" onclick="newGame()">🔄 Новая игра</button>
+            <button class="hint-btn" onclick="getHint()">💡 Подсказка</button>
+        </div>
+        
+        <div class="footer">
+            <p>Нажимай на буквы или используй клавиатуру</p>
+        </div>
+    </div>
 
+    <script>
+        // Список из 400+ слов
+        const words = [
+            // Животные (50 слов)
+            "собака", "кошка", "корова", "лошадь", "свинья", "курица", "петух", "утка", "гусь", "кролик",
+            "волк", "лиса", "медведь", "заяц", "белка", "ёжик", "лось", "олень", "кабан", "рысь",
+            "тигр", "лев", "слон", "жираф", "зебра", "носорог", "бегемот", "кенгуру", "обезьяна", "панда",
+            "дельфин", "кит", "акула", "скат", "окунь", "щука", "сом", "карп", "лещ", "форель",
+            "орёл", "сокол", "ястреб", "ворона", "сорока", "дятел", "сова", "попугай", "страус", "пингвин",
+            
+            // Растения (40 слов)
+            "дуб", "берёза", "клён", "сосна", "ель", "осина", "ива", "тополь", "липа", "рябина",
+            "ромашка", "роза", "тюльпан", "лилия", "орхидея", "гвоздика", "пион", "астра", "гладиолус", "хризантема",
+            "пшеница", "рожь", "овёс", "ячмень", "кукуруза", "рис", "гречка", "горох", "фасоль", "соя",
+            "яблоко", "груша", "слива", "вишня", "абрикос", "персик", "апельсин", "лимон", "банан", "ананас",
+            
+            // Еда и напитки (40 слов)
+            "хлеб", "масло", "сыр", "молоко", "кефир", "сметана", "творог", "йогурт", "мороженое", "шоколад",
+            "пицца", "бургер", "суши", "салат", "суп", "борщ", "каша", "макароны", "пельмени", "блины",
+            "торт", "пирог", "печенье", "конфета", "зефир", "мармелад", "халва", "вафля", "пряник", "кекс",
+            "чай", "кофе", "какао", "сок", "вода", "лимонад", "квас", "компот", "кисель", "морс",
+            
+            // Одежда (30 слов)
+            "пальто", "куртка", "плащ", "шуба", "костюм", "пиджак", "брюки", "джинсы", "шорты", "юбка",
+            "платье", "сарафан", "рубашка", "футболка", "свитер", "водолазка", "жилет", "халат", "пижама", "носки",
+            "шапка", "кепка", "шляпа", "берет", "шарф", "перчатки", "варежки", "обувь", "сапоги", "туфли",
+            
+            // Город и транспорт (40 слов)
+            "город", "улица", "площадь", "парк", "сквер", "мост", "туннель", "дорога", "перекрёсток", "остановка",
+            "автобус", "троллейбус", "трамвай", "метро", "поезд", "электричка", "такси", "машина", "грузовик", "мотоцикл",
+            "самолёт", "вертолёт", "корабль", "лодка", "яхта", "велосипед", "самокат", "ролики", "лыжи", "коньки",
+            "магазин", "аптека", "больница", "школа", "институт", "библиотека", "музей", "театр", "кино", "цирк",
+            
+            // Профессии (30 слов)
+            "врач", "учитель", "инженер", "строитель", "водитель", "лётчик", "космонавт", "пожарный", "полицейский", "военный",
+            "продавец", "кассир", "бухгалтер", "экономист", "юрист", "адвокат", "судья", "учёный", "программист", "дизайнер",
+            "художник", "музыкант", "певец", "танцор", "актёр", "режиссёр", "писатель", "поэт", "журналист", "фотограф",
+            
+            // Спорт (30 слов)
+            "футбол", "хоккей", "баскетбол", "волейбол", "теннис", "бокс", "борьба", "гимнастика", "плавание", "бег",
+            "шахматы", "шашки", "бильярд", "боулинг", "гольф", "сквош", "кёрлинг", "самбо", "дзюдо", "каратэ",
+            "стадион", "бассейн", "корт", "каток", "лыжня", "трамплин", "турник", "гантели", "скакалка", "обруч",
+            
+            // Природа и погода (30 слов)
+            "солнце", "луна", "звезда", "облако", "туча", "дождь", "снег", "град", "туман", "ветер",
+            "ураган", "гроза", "молния", "радуга", "север", "юг", "запад", "восток", "гора", "равнина",
+            "река", "озеро", "море", "океан", "пруд", "болото", "лес", "поле", "луг", "степь",
+            
+            // Дом и интерьер (30 слов)
+            "дом", "квартира", "комната", "кухня", "ванная", "туалет", "прихожая", "балкон", "крыша", "подвал",
+            "стол", "стул", "кресло", "диван", "кровать", "шкаф", "полка", "тумба", "комод", "зеркало",
+            "лампа", "люстра", "торшер", "ковёр", "подушка", "одеяло", "покрывало", "занавеска", "картина", "часы",
+            
+            // Техника и устройства (30 слов)
+            "телефон", "планшет", "ноутбук", "компьютер", "телевизор", "холодильник", "плита", "духовка", "микроволновка", "чайник",
+            "фен", "утюг", "пылесос", "стиралка", "посудомойка", "кондиционер", "обогреватель", "вентилятор", "фотоаппарат", "видеокамера",
+            "наушники", "колонки", "микрофон", "принтер", "сканер", "роутер", "модем", "зарядка", "батарейка", "аккумулятор",
+            
+            // Абстрактные понятия (20 слов)
+            "любовь", "дружба", "счастье", "радость", "печаль", "злость", "страх", "надежда", "вера", "правда",
+            "ложь", "добро", "зло", "красота", "сила", "слава", "мир", "война", "жизнь", "смерть",
+            
+            // Разное (30 слов)
+            "книга", "тетрадь", "ручка", "карандаш", "линейка", "ластик", "точилка", "фломастер", "краска", "кисточка",
+            "бумага", "газета", "журнал", "конверт", "марка", "открытка", "календарь", "блокнот", "ежедневник", "папка",
+            "игрушка", "кукла", "машинка", "мяч", "кубик", "пирамидка", "пазл", "конструктор", "мозаика", "домино"
+        ];
+
+        // Изображения виселицы
+        const HANGMAN_PICS = [
+            `
+           -----
+           |   |
+               |
+               |
+               |
+               |
+        =========`,
+            `
+           -----
+           |   |
+           O   |
+               |
+               |
+               |
+        =========`,
+            `
+           -----
+           |   |
+           O   |
+           |   |
+               |
+               |
+        =========`,
+            `
+           -----
+           |   |
+           O   |
+          /|   |
+               |
+               |
+        =========`,
+            `
+           -----
+           |   |
+           O   |
+          /|\\  |
+               |
+               |
+        =========`,
+            `
+           -----
+           |   |
+           O   |
+          /|\\  |
+          /    |
+               |
+        =========`,
+            `
+           -----
+           |   |
+           O   |
+          /|\\  |
+          / \\  |
+               |
+        =========`
+        ];
+
+        // Состояние игры
+        let secretWord = "";
+        let guessedLetters = [];
+        let attempts = 6;
+        let wordCompletion = "";
+        let gameActive = true;
+        let gamesPlayed = 0;
+        let wins = 0;
+        let hintUsed = false;
+
+        // Инициализация
+        function initGame() {
+            secretWord = words[Math.floor(Math.random() * words.length)].toUpperCase();
+            guessedLetters = [];
+            attempts = 6;
+            wordCompletion = "_".repeat(secretWord.length);
+            gameActive = true;
+            hintUsed = false;
+            
+            updateDisplay();
+            createKeyboard();
+            document.getElementById('message').innerHTML = '';
+            document.getElementById('hint').innerHTML = '';
+        }
+
+        // Обновление дисплея
+        function updateDisplay() {
+            document.getElementById('hangman').textContent = HANGMAN_PICS[6 - attempts];
+            document.getElementById('word').textContent = wordCompletion.split('').join(' ');
+            
+            const guessedLettersStr = guessedLetters.length > 0 
+                ? [...new Set(guessedLetters)].sort().join(', ') 
+                : 'пока нет';
+            document.getElementById('guessed-letters').innerHTML = `🔤 Использованные буквы: ${guessedLettersStr}`;
+            
+            document.getElementById('attempts').textContent = attempts;
+            document.getElementById('games-played').textContent = gamesPlayed;
+            document.getElementById('wins').textContent = wins;
+            const winPercent = gamesPlayed > 0 ? Math.round((wins / gamesPlayed) * 100) : 0;
+            document.getElementById('win-percent').textContent = winPercent + '%';
+            
+            // Проверка победы/поражения
+            if (!wordCompletion.includes('_') && gameActive) {
+                gameActive = false;
+                wins++;
+                document.getElementById('wins').textContent = wins;
+                document.getElementById('message').innerHTML = '🎉 ПОБЕДА! Ты отгадал слово!';
+                document.getElementById('message').className = 'message win-message';
+                disableKeyboard();
+            } else if (attempts === 0 && gameActive) {
+                gameActive = false;
+                document.getElementById('message').innerHTML = `💀 Ты проиграл! Загаданное слово: ${secretWord}`;
+                document.getElementById('message').className = 'message lose-message';
+                disableKeyboard();
+            }
+        }
+
+        // Создание клавиатуры
+        function createKeyboard() {
+            const keyboard = document.getElementById('keyboard');
+            const letters = 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'.split('');
+            
+            keyboard.innerHTML = '';
+            letters.forEach(letter => {
+                const button = document.createElement('button');
+                button.className = 'key';
+                button.textContent = letter;
+                button.onclick = () => handleGuess(letter);
+                
+                if (guessedLetters.includes(letter)) {
+                    button.classList.add('used');
+                    if (secretWord.includes(letter)) {
+                        button.classList.add('correct');
+                    } else {
+                        button.classList.add('wrong');
+                    }
+                }
+                
+                keyboard.appendChild(button);
+            });
+        }
+
+        // Обработка ввода буквы
+        function handleGuess(letter) {
+            if (!gameActive || guessedLetters.includes(letter)) return;
+            
+            guessedLetters.push(letter);
+            
+            if (secretWord.includes(letter)) {
+                // Обновляем слово
+                let wordArray = wordCompletion.split('');
+                let count = 0;
+                for (let i = 0; i < secretWord.length; i++) {
+                    if (secretWord[i] === letter) {
+                        wordArray[i] = letter;
+                        count++;
+                    }
+                }
+                wordCompletion = wordArray.join('');
+                
+                // Показываем сообщение
+                const message = count > 1 
+                    ? `✅ Отлично! Буква '${letter}' встречается ${count} раза!`
+                    : `✅ Есть такая буква!`;
+                showTemporaryMessage(message, 'success');
+            } else {
+                attempts--;
+                
+                // Показываем сообщение
+                showTemporaryMessage(`❌ Нет буквы '${letter}'!`, 'error');
+                
+                // Подсказка после 3 ошибок
+                if (attempts === 3 && !hintUsed) {
+                    document.getElementById('hint').innerHTML = `💡 Подсказка: слово начинается на '${secretWord[0]}'`;
+                }
+            }
+            
+            updateDisplay();
+            createKeyboard();
+        }
+
+        // Показ временного сообщения
+        function showTemporaryMessage(text, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type === 'success' ? 'win-message' : 'lose-message'}`;
+            messageDiv.style.position = 'fixed';
+            messageDiv.style.top = '50%';
+            messageDiv.style.left = '50%';
+            messageDiv.style.transform = 'translate(-50%, -50%)';
+            messageDiv.style.zIndex = '1000';
+            messageDiv.style.padding = '20px';
+            messageDiv.style.borderRadius = '10px';
+            messageDiv.style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
+            messageDiv.textContent = text;
+            
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                document.body.removeChild(messageDiv);
+            }, 1500);
+        }
+
+        // Отключение клавиатуры
+        function disableKeyboard() {
+            const keys = document.querySelectorAll('.key');
+            keys.forEach(key => {
+                key.disabled = true;
+            });
+        }
+
+        // Подсказка
+        function getHint() {
+            if (!gameActive || hintUsed) return;
+            
+            hintUsed = true;
+            showTemporaryMessage(`💡 Первая буква: ${secretWord[0]}`, 'success');
+            document.getElementById('hint').innerHTML = `💡 Подсказка: слово начинается на '${secretWord[0]}'`;
+        }
+
+        // Новая игра
+        function newGame() {
+            gamesPlayed++;
+            initGame();
+        }
+
+        // Обработка клавиатуры
+        document.addEventListener('keydown', (e) => {
+            if (!gameActive) return;
+            
+            const key = e.key.toUpperCase();
+            if (key.length === 1 && key >= 'А' && key <= 'Я' || key === 'Ё') {
+                handleGuess(key);
+            }
+        });
+
+        // Старт игры
+        initGame();
+    </script>
+</body>
 </html>
